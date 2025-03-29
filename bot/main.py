@@ -4,12 +4,8 @@ from PIL import Image
 
 import os
 from collections import Counter
-import logging
 
 dotenv.load_dotenv()
-
-logger = logging.getLogger(__name__)
-logging.basicConfig(filename='logs/bot.log', level=logging.INFO, encoding='utf-8', format='%(asctime)s - %(levelname)s - %(message)s')
 
 BOT_TOKEN = os.getenv("BOT_TOKEN") or ''
 LOG_CHANNEL = int(os.getenv("LOG_CHANNEL") or '')
@@ -61,8 +57,6 @@ async def on_ready():
 
 
 def place_shirt(template, shirt):
-    logger.info('Placing shirt on template')
-
     front_shirt = shirt.crop(FRONT_SHIRT_COORDS)
     back_shirt = shirt.crop(BACK_SHIRT_COORDS)
     front_right_arm = shirt.crop(FRONT_RIGHT_ARM_COORDS)
@@ -81,21 +75,15 @@ def place_shirt(template, shirt):
     template.paste(right_arm, TEMPLATE_RIGHT_ARM_COORDS, right_arm)
     template.paste(left_arm, TEMPLATE_LEFT_ARM_COORDS, left_arm)
 
-    logger.info('Shirt placed on template')
-
     shirt_data = list(front_shirt.getdata())
     shirt_colors = Counter(shirt_data)
 
     most_common = shirt_colors.most_common(1)[0][0]
 
-    logger.info(f'Most common color in shirt: {most_common}')
-
     return most_common
 
 
 def place_pants(template, pants):
-    logger.info('Placing pants on template')
-
     front_right_leg = pants.crop(FRONT_RIGHT_LEG_COORDS)
     front_left_leg = pants.crop(FRONT_LEFT_LEG_COORDS)
     back_right_leg = pants.crop(BACK_RIGHT_LEG_COORDS)
@@ -110,14 +98,10 @@ def place_pants(template, pants):
     template.paste(right_leg, TEMPLATE_RIGHT_LEG_COORDS, right_leg)
     template.paste(left_leg, TEMPLATE_LEFT_LEG_COORDS, left_leg)
 
-    logger.info('Pants placed on template')
-
     pants_data = list(front_right_leg.getdata())
     pants_colors = Counter(pants_data)
 
     most_common = pants_colors.most_common(1)[0][0]
-
-    logger.info(f'Most common color in pants: {most_common}')
 
     return most_common
 
@@ -131,15 +115,12 @@ async def showcase(
     await ctx.defer()
 
     if not shirt and not pants:
-        logger.debug('No shirt or pants provided')
         return await ctx.respond('You must provide a shirt or pants to showcase', ephemeral=True)
 
     if shirt and (shirt.width != 585 and shirt.height != 559):
-        logger.debug(f'Shirt does not meet requirements ({shirt.width}x{shirt.height})')
         return await ctx.respond('The shirt must be 585x559 pixels')
 
     if pants and (pants.width != 585 and pants.height != 559):
-        logger.debug(f'Pants does not meet requirements ({pants.width}x{pants.height})')
         return await ctx.respond('The pants must be 585x559 pixels')
 
     uid = ctx.author.id
@@ -186,7 +167,6 @@ async def showcase(
                 pants_color = place_pants(template, pants)
 
         template.save(f'temp/showcase-{uid}.png')
-        logger.info(f'Showcase image {uid} saved')
 
     color_alpha: tuple[int, int, int, int] = shirt_color if shirt_color else pants_color  # pyright: ignore
     color = color_alpha[:3]
@@ -206,8 +186,6 @@ async def showcase(
         os.remove(f'temp/pants-{uid}.png')
 
     os.remove(f'temp/showcase-{uid}.png')
-
-    logger.info(f'Showcase image {uid} removed')
 
 
 if __name__ == '__main__':
