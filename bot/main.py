@@ -1,9 +1,13 @@
+from io import BytesIO
 import discord
 import dotenv
+import requests
 from PIL import Image
 
+import re
 import os
 from collections import Counter
+import xml.etree.ElementTree as ET
 
 dotenv.load_dotenv()
 
@@ -186,6 +190,59 @@ async def showcase(
         os.remove(f'temp/pants-{uid}.png')
 
     os.remove(f'temp/showcase-{uid}.png')
+
+
+@bot.slash_command(name='robloxkit')
+async def robloxkit(ctx, url: discord.Option(discord.SlashCommandOptionType.string, 'The URL to the Roblox asset')):  # pyright: ignore
+    await ctx.defer()
+
+    searched = re.search(r'catalog/(\d+)', url)
+    if not searched:
+        return await ctx.respond('Invalid URL provided', ephemeral=True)
+
+    asset_id = searched.group(1)
+    xml = requests.get(f'https://assetdelivery.roblox.com/v1/asset?id={asset_id}').text
+
+    if 'Asset not found' in xml:
+        return await ctx.respond('Asset not found', ephemeral=True)
+
+    root = ET.fromstring(xml)
+    asset_url = root.find(".//Content")
+
+    if asset_url is None:
+        return await ctx.respond('No asset found', ephemeral=True)
+
+    iterator = asset_url.itertext()
+    _ = next(iterator)
+    url = next(iterator)
+
+    final_id = url.split('=')[-1]
+    final_url = f'https://assetdelivery.roblox.com/v1/asset?id={final_id}'
+
+    shirt = discord.File(BytesIO(requests.get(final_url).content), filename=f'{final_id}.png')
+
+    other_data = requests.get(f"https://catalog.roblox.com/v1/catalog/items/{asset_id}/details?itemType=asset").json()
+    
+    name = other_data['name']
+    creator = other_data['creatorName']
+    sellerID = other_data['expectedSellerId']
+    price = other_data['price']
+    assetType = other_data['assetType']
+
+    asset_type_text = 'Shirt' if assetType == 11 else ('Pants' if assetType == 12 else 'Unknown')
+
+    embed = discord.Embed(
+        title=name,
+        description=f'[{name}]({url}) by [{creator}](https://www.roblox.com/users/{sellerID}/profile)',
+        color=discord.Color.blurple()
+    )
+
+    embed.add_field(name='Price', value=f'{price} robux')
+    embed.add_field(name='Asset Type', value=f'{asset_type_text} ({assetType})')
+
+    embed.set_image(url=f'attachment://{final_id}.png')
+
+    await ctx.respond(embed=embed, files=[shirt])
 
 
 if __name__ == '__main__':
