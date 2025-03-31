@@ -62,6 +62,8 @@ async def on_ready():
 
 
 def place_shirt(template, shirt):
+    shirt = shirt.convert('RGBA')
+
     front_shirt = shirt.crop(FRONT_SHIRT_COORDS)
     back_shirt = shirt.crop(BACK_SHIRT_COORDS)
     front_right_arm = shirt.crop(FRONT_RIGHT_ARM_COORDS)
@@ -89,6 +91,8 @@ def place_shirt(template, shirt):
 
 
 def place_pants(template, pants):
+    pants = pants.convert('RGBA')
+
     front_right_leg = pants.crop(FRONT_RIGHT_LEG_COORDS)
     front_left_leg = pants.crop(FRONT_LEFT_LEG_COORDS)
     back_right_leg = pants.crop(BACK_RIGHT_LEG_COORDS)
