@@ -193,6 +193,7 @@ async def showcase(
 
 
 @bot.slash_command(name='robloxkit')
+@commands.has_role(1299690637360369694)
 async def robloxkit(ctx, url: discord.Option(discord.SlashCommandOptionType.string, 'The URL to the Roblox asset')):  # pyright: ignore
     await ctx.defer()
 
